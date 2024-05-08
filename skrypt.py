@@ -263,10 +263,10 @@ class Transformacje:
        elif l >= 22.5 and l <= 25.5:
            l0 = np.radians(24)
        else:
-           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(l))} ten południk nie mieści się w zakresie)
+           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(l))} ten południk nie mieści się w zakresie")
        
        if f > 55 or f < 48.9:
-           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(f))} ten równoleżnik nie mieści się w zakresie)
+           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(f))} ten równoleżnik nie mieści się w zakresie")
            
        f = np.radians(f)
        l = np.radians(l)
@@ -295,3 +295,94 @@ class Transformacje:
        x00 = xgk * 0.999923
        y00 = ygk * 0.999923 + strefa * 1000000 + 500000
        return(x00,y00)
+   
+    def dXYZ(self, xa, ya, za, xb, yb, zb):
+        '''
+       Funkcja oblicza różnicę współrzędnych między punktami A i B, należy jej użyć do obliczeń macierzy NEU.
+
+        Parametry
+        ----------
+        XA, YA, ZA, XB, YB, ZB: FLOAT
+             współrzędne orto-kartezjańskie, 
+
+        Returns
+        -------
+        dXYZ : ARRAY
+            macierz różnicy współrzędnych
+
+        '''
+        dXYZ = np.array([xb-xa, yb-ya, zb-za])
+        return(dXYZ)
+    
+    
+    def rneu(self, f, l):
+        '''
+        Funkcja generuje macierz obrotu R, niezbędna jest ona do stworzenia macierzy NEU.
+
+        Parametry
+        ----------
+        f : FLOAT
+            [st. dz.] - szerokość 
+        l : FLOAT
+            [st. dz.] - długośc 
+
+        Returns
+        -------
+        R ARRAY
+            macierz obrotu R
+             
+        '''
+        f=np.radians(f)
+        l=np.radians(l)
+        R = np.array([[-np.sin(f)*np.cos(l), -np.sin(l), np.cos(f)*np.cos(l)],
+                      [-np.sin(f)*np.sin(l),  np.cos(l), np.cos(f)*np.sin(l)],
+                      [np.cos(f),             0,         np.sin(f)          ]])
+        return(R)
+    
+    
+    def xyz2neu(self, f, l, xa, ya, za, xb, yb, zb):
+        '''
+        Układ współrzędnych horyzontalnych opisuje położenie obiektów astronomicznych względem
+        lokalnego horyzontu. Zenit i nadir, są ważnymi punktami w tym układzie. Współrzędne horyzontalne
+        zmieniają się wraz z ruchem obserwatora i czasem, co pozwala określić chwilową pozycję obiektów na niebie.
+
+        Parametry
+        ----------
+        f : FLOAT
+            [st. dz.] - szerokość 
+        l : FLOAT
+            [st. dz.] - długośc
+        XA, YA, ZA, XB, YB, ZB: FLOAT
+             współrzędne orto-kartezjańskie
+
+        Returns
+        -------
+        n , e, u : STR
+            wsp. horyz.
+            
+
+        '''
+        dX = Transformacje.dXYZ(self, xa, ya, za, xb, yb, zb)
+        R = Transformacje.rneu(self, f,l)
+        neu = R.T @ dX
+        n = neu[0];   e = neu[1];   u = neu[2]
+        n = "%.16f"%n; e = "%.16f"%e; u="%.16f"%u
+        dlugosc = []
+        xx = len(n); dlugosc.append(xx)
+        yy = len(e); dlugosc.append(yy)
+        zz = len(u); dlugosc.append(zz)
+        P = 50
+        
+        while xx < P:
+            n = str(" ") + n
+            xx += 1
+        
+        while yy < P:
+            e = str(" ") + e
+            yy += 1
+            
+        while zz < P:
+            u = str(" ") + u
+            zz +=1
+            
+        return(n, e, u)
