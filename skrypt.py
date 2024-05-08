@@ -387,3 +387,81 @@ class Transformacje:
             
         return(n, e, u)
     
+    def wczytanie(self, Dane):
+        with open (Dane,"r") as plik:
+            tip = np.genformtxt(plik, delimiter=".",dtype = '<U20', skip_header = 4)
+            X=[]
+            Y=[]
+            Z=[]
+            for i in tip:
+                x=i[0]
+                X.append(float(x))
+                y=i[1]
+                Y.append(float(y))
+                z=i[2]
+                Z.append(float(z))
+            wielkosc = len(X)
+        return(X, Y, Z, wielkosc)
+    
+def zapisanie(self, X, Y, Z, f, l, h, x92, y92, x00, y00, N, E, U, xyz_txt, neu_txt ): 
+    '''
+    funkcja zapisuje wyniki obliczeń (x, y, z, f, l, h, x92, y92, x1992, y1992, x2000, y2000 ,neu).
+    Tworzy z nich tabele.
+
+    Parametry
+    ----------
+    X, Y, Z : LIST
+         [metry] - współrzędne w układzie orto-kartezjańskim, 
+     f : LIST
+         [dms] - szerokość geodezyjna..
+     l : LIST
+         [dms] - długośc geodezyjna.
+     h : LIST
+         [metry] - wysokość elipsoidalna
+    X1992, Y1992 : LIST
+         [metry] - współrzędne w układzie 1992
+     X2000, Y2000 : LIST
+         [metry] - współrzędne w układzie 2000
+    n, e, u : str
+        współrzędne horyzontalne
+
+    Returns
+    -------
+    PLIK TXT
+
+    '''
+    for i in range(len(X)):
+        X[i] = Transformacje.zamiana_float2string(self, X[i])
+        Y[i] = Transformacje.zamiana_float2string(self, Y[i])
+        Z[i] = Transformacje.zamiana_float2string(self, Z[i])
+    
+    with open(xyz_txt , "w",  encoding="utf-8") as plik:
+        plik.write(f"Wyniki_obliczen_Geodezyjnych; X, Y, Z, fi, lambda, h, x1992, y1992, x2000, y2000.\n")
+        plik.write(f"Znak '-' w koordynatach; x1992, y1992, x2000, y2000 oznacza, że dla podanych współrzędnych ortokartezjańskich (X, Y, Z) po obliczeniu współrzędnych geodezyjnych fi i lambda. fi i lambda nie należą do dozwolonych współrzędnych \ngeodezyjnych układów PL1992, PL2000.\n")
+        plik.write("-"*221)
+        plik.write(f"\n")
+        plik.write(f"|          X          |          Y          |          Z          |          fi         |        lambda       |          h          |        x1992        |        y1992        |        x2000        |        y2000        |")
+        plik.write(f"\n")
+        plik.write("-"*221)
+        plik.write(f"\n")
+        for x, y, z, f, l, h, x92, y92, x00, y00 in zip(X, Y, Z, f, l, h, x92, y92, x00, y00):
+            plik.write(f"|{x}|{y}|{z}|     {f}|     {l}|{h}|{x92}|{y92}|{x00}|{y00}|")
+            plik.write(f"\n")
+        plik.write("-"*221)
+    
+    with open(neu_txt , "w", encoding="utf-8") as plik1:
+        plik1.write(f"Wyniki_obliczen_Geodezyjnych; n, e, u.\n")
+        plik1.write("-"*154)
+        plik1.write(f"\n")
+        plik1.write(f"|                        n                         |                        e                         |                        u                         |")
+        plik1.write(f"\n")
+        plik1.write("-"*154)
+        plik1.write(f"\n")
+        for n, e, u in zip(N, E, U):
+            plik1.write(f"|{n}|{e}|{u}|")
+            plik1.write(f"\n")
+        plik1.write("-"*154)
+        
+if __name__ == "__main__":
+    geo = Transformacje("GRS80")
+    geo.wczytanie_zapisanie_pliku("wsp_inp.txt")
