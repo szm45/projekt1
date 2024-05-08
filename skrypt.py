@@ -149,3 +149,149 @@ class Transformacje:
             return(f,l,h)
         else:
             raise NotImplementedError(f"{output} - output format not defined")
+
+    def odwrotny_hirvonen(self, f, l, h):
+       '''
+      Algorytm odwrotny do algorytmu Hirvonena służy do przekształcania współrzędnych geodezyjnych (B, L, H) 
+      na współrzędne ortokartezjańskie (x, y, z). To proces umożliwiający przejście z opisu geodezyjnego punktu 
+      na powierzchni ziemi do odpowiadającej mu lokalizacji w trójwymiarowym układzie współrzędnych kartezjańskich.
+       Parametry
+       ----------
+       f : FLOAT
+           [st. dz] - szerokość
+       l : FLOAT
+           [st. dz] - długośc 
+       h : FLOAT
+           [m] - wysokość 
+       Returns
+       -------
+        X, Y, Z : FLOAT
+             [m] - współrzędne orto-kartezjańskie
+
+       '''
+       f=np.radians(f)
+       l=np.radians(l)
+       
+       N = Transformacje.NP(self, f)
+       X = (N + h) * np.cos(f) * np.cos(l)
+       Y = (N + h) * np.cos(f) * np.sin(l)
+       Z = (N *(1-self.e2) + h) * np.sin(f) 
+       
+       return(X,Y,Z)
+   
+   
+    def flh2PL1992(self, f, l):
+       '''
+       Układ współrzędnych 1992 (PUWG-92) to system płaskich współrzędnych prostokątnych,
+       który używa odwzorowania Gaussa-Krügera dla elipsoidy GRS80 w ramach pojedynczej dziesięciostopniowej strefy.
+
+       Parametry
+       ----------
+       f : FLOAT
+           [st. dz.] - szerokość
+       l : FLOAT
+           [st. dz] - długośc
+
+       Returns
+       -------
+        X1992, Y1992 : FLOAT
+             [m] - współrzędne (1992)
+
+       '''
+       
+       if l > 25.5 or l < 13.5:
+           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(l))} ten południk nie jest obsługiwany przez układ współrzędnych płaskich PL1992")
+           
+       if f > 55 or f < 48.9:
+           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(f))} ten równoleżnik nie jest obsługiwany przez układ współrzędnych płaskich PL1992")
+           
+       f = np.radians(f)
+       l = np.radians(l)
+       a2 = self.a**2
+       b2 = a2 * (1 - self.e2)
+       e_2 = (a2 - b2)/b2
+       l0 = np.radians(19)
+       dl = l - l0
+       dl2 = dl**2
+       dl4 = dl**4
+       t = np.tan(f)
+       t2 = t**2
+       t4 = t**4
+       n2 = e_2 * (np.cos(f)**2)
+       n4 = n2 ** 2
+       N = Transformacje.NP(self, f)
+       e4 = self.e2**2
+       e6 = self.e2**3
+       A0 = 1 - (self.e2/4) - ((3*e4)/64) - ((5*e6)/256)
+       A2 = (3/8) * (self.e2 + e4/4 + (15*e6)/128)
+       A4 = (15/256) * (e4 + (3*e6)/4)
+       A6 = (35*e6)/3072
+       sigma = self.a * ((A0 * f) - A2 * np.sin(2*f) + A4 * np.sin(4*f) - A6 * np.sin(6*f))
+       xgk = sigma + ((dl**2)/2) * N * np.sin(f) * np.cos(f) * (1 + ((dl**2)/12)*(np.cos(f)**2)*(5 - t2 + 9 * n2 + 4 * n4) + (dl4/360) * (np.cos(f)**4)*(61 - (58 * t2) + t4 + (270 * n2) - (330 * n2 * t2)))
+       ygk = dl * N * np.cos(f) * (1 + (dl2/6) * (np.cos(f)**2) * (1 - t2 + n2) + (dl4/120) * (np.cos(f)**4) * (5 - (18 * t2) + t4 + (14 * n2) - 58 * n2 * t2))
+       x92 = xgk * 0.9993 - 5300000
+       y92 = ygk * 0.9993 + 500000
+       return(x92,y92)
+   
+   
+    def flh2PL2000(self, f, l):
+       '''
+      Układ współrzędnych 2000 to system prostych współrzędnych płaskich.
+      Wykorzystuje on odwzorowanie Gaussa-Krügera dla elipsoidy GRS 80 w czterech określonych strefach, na południkach
+      15°E, 18°E, 21°E i 24°E.
+
+       Parametry
+       ----------
+       f : FLOAT
+           [st. dz.] - szerokość 
+       l : FLOAT
+           [st. dz.] - długośc 
+
+       Returns
+       -------
+        X2000, Y2000 : FLOAT
+             [m] - współrzędne 
+
+       '''
+         
+       if l >= 13.5 and l < 16.5:
+           l0 = np.radians(15)
+       elif l >= 16.5 and l < 19.5:
+           l0 = np.radians(18)
+       elif l >= 19.5 and l < 22.5:
+           l0 = np.radians(21)
+       elif l >= 22.5 and l <= 25.5:
+           l0 = np.radians(24)
+       else:
+           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(l))} ten południk nie mieści się w zakresie)
+       
+       if f > 55 or f < 48.9:
+           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(f))} ten równoleżnik nie mieści się w zakresie)
+           
+       f = np.radians(f)
+       l = np.radians(l)
+       a2 = self.a**2
+       b2 = a2 * (1 - self.e2)
+       e_2 = (a2 - b2)/b2
+       dl = l - l0
+       dl2 = dl**2
+       dl4 = dl**4
+       t = np.tan(f)
+       t2 = t**2
+       t4 = t**4
+       n2 = e_2 * (np.cos(f)**2)
+       n4 = n2 ** 2
+       N = Transformacje.NP(self, f)
+       e4 = self.e2**2
+       e6 = self.e2**3
+       A0 = 1 - (self.e2/4) - ((3*e4)/64) - ((5*e6)/256)
+       A2 = (3/8) * (self.e2 + e4/4 + (15*e6)/128)
+       A4 = (15/256) * (e4 + (3*e6)/4)
+       A6 = (35*e6)/3072
+       sigma = self.a * ((A0 * f) - A2 * np.sin(2*f) + A4 * np.sin(4*f) - A6 * np.sin(6*f))
+       xgk = sigma + ((dl**2)/2) * N * np.sin(f) * np.cos(f) * (1 + ((dl**2)/12)*(np.cos(f)**2)*(5 - t2 + 9 * n2 + 4 * n4) + (dl4/360) * (np.cos(f)**4)*(61 - (58 * t2) + t4 + (270 * n2) - (330 * n2 * t2)))
+       ygk = dl * N * np.cos(f) * (1 + (dl2/6) * (np.cos(f)**2) * (1 - t2 + n2) + (dl4/120) * (np.cos(f)**4) * (5 - (18 * t2) + t4 + (14 * n2) - 58 * n2 * t2))
+       strefa = round(l0 * 180/np.pi)/3
+       x00 = xgk * 0.999923
+       y00 = ygk * 0.999923 + strefa * 1000000 + 500000
+       return(x00,y00)
