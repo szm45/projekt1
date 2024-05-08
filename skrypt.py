@@ -386,3 +386,5 @@ class Transformacje:
             zz +=1
             
         return(n, e, u)
+    
+    eoeoeoeoeoeoeo
