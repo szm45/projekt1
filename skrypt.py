@@ -82,13 +82,13 @@ class Transformacje:
         return(x1)
         
         
-    def NP(self, f):
+    def NP(self, fi):
         '''
        Funkcja oblicza promień przekroju w pierwszej pionowej płaszczyźnie, który jest potrzebny m.in. do zastosowania algorytmu Hirvonena
         
         Parameters
         ----------
-        f : FLOAT
+        fi : FLOAT
             [radiany] - szerokość geodezyjna
 
         Returns
@@ -97,7 +97,7 @@ class Transformacje:
             [metry] - promień przekroju w pierwszym wertykale
 
         '''
-        N = self.a / np.sqrt(1 - self.e2 * np.sin(f)**2)
+        N = self.a / np.sqrt(1 - self.e2 * np.sin(fi)**2)
         return(N)
     
     
@@ -126,40 +126,40 @@ class Transformacje:
         '''
 
         p = np.sqrt(X**2 + Y**2)
-        f = np.arctan(Z/(p * (1 - self.e2)))
+        fi = np.arctan(Z/(p * (1 - self.e2)))
         while True:
-            N = Transformacje.NP(self, f)
-            h = (p / np.cos(f)) - N
-            fp = f
-            f = np.arctan(Z / (p * (1 - self.e2 * (N / (N+h)))))
-            if np.abs(fp - f) < (0.000001/206265):
+            N = Transformacje.NP(self, fi)
+            h = (p / np.cos(fi)) - N
+            fip = fi
+            fi = np.arctan(Z / (p * (1 - self.e2 * (N / (N+h)))))
+            if np.abs(fip - fi) < (0.000001/206265):
                 break
-        l = np.arctan2(Y, X)
+        lam = np.arctan2(Y, X)
         if output == "dec_degree":
-            fi=(f*180/np.pi)
-            lam=(l*180/np.pi)
+            fi=(fi*180/np.pi)
+            lam=(lam*180/np.pi)
             return (fi, lam, h)
         elif output == "dms":
-            fi = Transformacje.dms(self, f)
-            lam = Transformacje.dms(self, l)
+            fi = Transformacje.dms(self, fi)
+            lam = Transformacje.dms(self, lam)
             return (fi,lam,h) 
         elif output == 'radiany':
-            fi=f
-            lam=l
-            return(f,l,h)
+            
+            
+            return(fi,lam,h)
         else:
             raise NotImplementedError(f"{output} - output format not defined")
 
-    def odwrotny_hirvonen(self, f, l, h):
+    def odwrotny_hirvonen(self, fi, lam, h):
        '''
       Algorytm odwrotny do algorytmu Hirvonena służy do przekształcania współrzędnych geodezyjnych (B, L, H) 
       na współrzędne ortokartezjańskie (x, y, z). To proces umożliwiający przejście z opisu geodezyjnego punktu 
       na powierzchni ziemi do odpowiadającej mu lokalizacji w trójwymiarowym układzie współrzędnych kartezjańskich.
        Parametry
        ----------
-       f : FLOAT
+       fi : FLOAT
            [st. dz] - szerokość
-       l : FLOAT
+       lam : FLOAT
            [st. dz] - długośc 
        h : FLOAT
            [m] - wysokość 
@@ -169,27 +169,27 @@ class Transformacje:
              [m] - współrzędne orto-kartezjańskie
 
        '''
-       f=np.radians(f)
-       l=np.radians(l)
+       fi=np.radians(fi)
+       lam=np.radians(lam)
        
-       N = Transformacje.NP(self, f)
-       X = (N + h) * np.cos(f) * np.cos(l)
-       Y = (N + h) * np.cos(f) * np.sin(l)
-       Z = (N *(1-self.e2) + h) * np.sin(f) 
+       N = Transformacje.NP(self, fi)
+       X = (N + h) * np.cos(fi) * np.cos(lam)
+       Y = (N + h) * np.cos(fi) * np.sin(lam)
+       Z = (N *(1-self.e2) + h) * np.sin(fi) 
        
        return(X,Y,Z)
    
    
-    def flh2PL1992(self, f, l):
+    def flh2PL1992(self, fi, lam):
        '''
        Układ współrzędnych 1992 (PUWG-92) to system płaskich współrzędnych prostokątnych,
        który używa odwzorowania Gaussa-Krügera dla elipsoidy GRS80 w ramach pojedynczej dziesięciostopniowej strefy.
 
        Parametry
        ----------
-       f : FLOAT
+       fi : FLOAT
            [st. dz.] - szerokość
-       l : FLOAT
+       lam : FLOAT
            [st. dz] - długośc
 
        Returns
@@ -199,42 +199,42 @@ class Transformacje:
 
        '''
        
-       if l > 25.5 or l < 13.5:
-           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(l))} ten południk nie jest obsługiwany przez układ współrzędnych płaskich PL1992")
+       if lam > 25.5 or lam < 13.5:
+           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(lam))} ten południk nie jest obsługiwany przez układ współrzędnych płaskich PL1992")
            
-       if f > 55 or f < 48.9:
-           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(f))} ten równoleżnik nie jest obsługiwany przez układ współrzędnych płaskich PL1992")
+       if fi > 55 or fi < 48.9:
+           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(fi))} ten równoleżnik nie jest obsługiwany przez układ współrzędnych płaskich PL1992")
            
-       f = np.radians(f)
-       l = np.radians(l)
+       fi = np.radians(fi)
+       lam = np.radians(lam)
        a2 = self.a**2
        b2 = a2 * (1 - self.e2)
        e_2 = (a2 - b2)/b2
        l0 = np.radians(19)
-       dl = l - l0
+       dl = lam - l0
        dl2 = dl**2
        dl4 = dl**4
-       t = np.tan(f)
+       t = np.tan(fi)
        t2 = t**2
        t4 = t**4
-       n2 = e_2 * (np.cos(f)**2)
+       n2 = e_2 * (np.cos(fi)**2)
        n4 = n2 ** 2
-       N = Transformacje.NP(self, f)
+       N = Transformacje.NP(self, fi)
        e4 = self.e2**2
        e6 = self.e2**3
        A0 = 1 - (self.e2/4) - ((3*e4)/64) - ((5*e6)/256)
        A2 = (3/8) * (self.e2 + e4/4 + (15*e6)/128)
        A4 = (15/256) * (e4 + (3*e6)/4)
        A6 = (35*e6)/3072
-       sigma = self.a * ((A0 * f) - A2 * np.sin(2*f) + A4 * np.sin(4*f) - A6 * np.sin(6*f))
-       xgk = sigma + ((dl**2)/2) * N * np.sin(f) * np.cos(f) * (1 + ((dl**2)/12)*(np.cos(f)**2)*(5 - t2 + 9 * n2 + 4 * n4) + (dl4/360) * (np.cos(f)**4)*(61 - (58 * t2) + t4 + (270 * n2) - (330 * n2 * t2)))
-       ygk = dl * N * np.cos(f) * (1 + (dl2/6) * (np.cos(f)**2) * (1 - t2 + n2) + (dl4/120) * (np.cos(f)**4) * (5 - (18 * t2) + t4 + (14 * n2) - 58 * n2 * t2))
+       sigma = self.a * ((A0 * fi) - A2 * np.sin(2*fi) + A4 * np.sin(4*fi) - A6 * np.sin(6*fi))
+       xgk = sigma + ((dl**2)/2) * N * np.sin(fi) * np.cos(fi) * (1 + ((dl**2)/12)*(np.cos(fi)**2)*(5 - t2 + 9 * n2 + 4 * n4) + (dl4/360) * (np.cos(fi)**4)*(61 - (58 * t2) + t4 + (270 * n2) - (330 * n2 * t2)))
+       ygk = dl * N * np.cos(fi) * (1 + (dl2/6) * (np.cos(fi)**2) * (1 - t2 + n2) + (dl4/120) * (np.cos(fi)**4) * (5 - (18 * t2) + t4 + (14 * n2) - 58 * n2 * t2))
        x92 = xgk * 0.9993 - 5300000
        y92 = ygk * 0.9993 + 500000
        return(x92,y92)
    
    
-    def flh2PL2000(self, f, l):
+    def flh2PL2000(self, fi, lam):
        '''
       Układ współrzędnych 2000 to system prostych współrzędnych płaskich.
       Wykorzystuje on odwzorowanie Gaussa-Krügera dla elipsoidy GRS 80 w czterech określonych strefach, na południkach
@@ -242,9 +242,9 @@ class Transformacje:
 
        Parametry
        ----------
-       f : FLOAT
+       fi : FLOAT
            [st. dz.] - szerokość 
-       l : FLOAT
+       lam : FLOAT
            [st. dz.] - długośc 
 
        Returns
@@ -254,43 +254,43 @@ class Transformacje:
 
        '''
          
-       if l >= 13.5 and l < 16.5:
+       if lam >= 13.5 and lam < 16.5:
            l0 = np.radians(15)
-       elif l >= 16.5 and l < 19.5:
+       elif lam >= 16.5 and lam < 19.5:
            l0 = np.radians(18)
-       elif l >= 19.5 and l < 22.5:
+       elif lam >= 19.5 and lam < 22.5:
            l0 = np.radians(21)
-       elif l >= 22.5 and l <= 25.5:
+       elif lam >= 22.5 and lam <= 25.5:
            l0 = np.radians(24)
        else:
-           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(l))} ten południk nie mieści się w zakresie")
+           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(lam))} ten południk nie mieści się w zakresie")
        
-       if f > 55 or f < 48.9:
-           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(f))} ten równoleżnik nie mieści się w zakresie")
+       if fi > 55 or fi < 48.9:
+           raise NotImplementedError(f"{Transformacje.dms(self, np.radians(fi))} ten równoleżnik nie mieści się w zakresie")
            
-       f = np.radians(f)
-       l = np.radians(l)
+       fi = np.radians(fi)
+       lam = np.radians(lam)
        a2 = self.a**2
        b2 = a2 * (1 - self.e2)
        e_2 = (a2 - b2)/b2
-       dl = l - l0
+       dl = lam - l0
        dl2 = dl**2
        dl4 = dl**4
-       t = np.tan(f)
+       t = np.tan(fi)
        t2 = t**2
        t4 = t**4
-       n2 = e_2 * (np.cos(f)**2)
+       n2 = e_2 * (np.cos(fi)**2)
        n4 = n2 ** 2
-       N = Transformacje.NP(self, f)
+       N = Transformacje.NP(self, fi)
        e4 = self.e2**2
        e6 = self.e2**3
        A0 = 1 - (self.e2/4) - ((3*e4)/64) - ((5*e6)/256)
        A2 = (3/8) * (self.e2 + e4/4 + (15*e6)/128)
        A4 = (15/256) * (e4 + (3*e6)/4)
        A6 = (35*e6)/3072
-       sigma = self.a * ((A0 * f) - A2 * np.sin(2*f) + A4 * np.sin(4*f) - A6 * np.sin(6*f))
-       xgk = sigma + ((dl**2)/2) * N * np.sin(f) * np.cos(f) * (1 + ((dl**2)/12)*(np.cos(f)**2)*(5 - t2 + 9 * n2 + 4 * n4) + (dl4/360) * (np.cos(f)**4)*(61 - (58 * t2) + t4 + (270 * n2) - (330 * n2 * t2)))
-       ygk = dl * N * np.cos(f) * (1 + (dl2/6) * (np.cos(f)**2) * (1 - t2 + n2) + (dl4/120) * (np.cos(f)**4) * (5 - (18 * t2) + t4 + (14 * n2) - 58 * n2 * t2))
+       sigma = self.a * ((A0 * fi) - A2 * np.sin(2*fi) + A4 * np.sin(4*fi) - A6 * np.sin(6*fi))
+       xgk = sigma + ((dl**2)/2) * N * np.sin(fi) * np.cos(fi) * (1 + ((dl**2)/12)*(np.cos(fi)**2)*(5 - t2 + 9 * n2 + 4 * n4) + (dl4/360) * (np.cos(fi)**4)*(61 - (58 * t2) + t4 + (270 * n2) - (330 * n2 * t2)))
+       ygk = dl * N * np.cos(fi) * (1 + (dl2/6) * (np.cos(fi)**2) * (1 - t2 + n2) + (dl4/120) * (np.cos(fi)**4) * (5 - (18 * t2) + t4 + (14 * n2) - 58 * n2 * t2))
        strefa = round(l0 * 180/np.pi)/3
        x00 = xgk * 0.999923
        y00 = ygk * 0.999923 + strefa * 1000000 + 500000
@@ -315,15 +315,15 @@ class Transformacje:
         return(dXYZ)
     
     
-    def rneu(self, f, l):
+    def rneu(self, fi, lam):
         '''
         Funkcja generuje macierz obrotu R, niezbędna jest ona do stworzenia macierzy NEU.
 
         Parametry
         ----------
-        f : FLOAT
+        fi : FLOAT
             [st. dz.] - szerokość 
-        l : FLOAT
+        lam : FLOAT
             [st. dz.] - długośc 
 
         Returns
@@ -332,15 +332,15 @@ class Transformacje:
             macierz obrotu R
              
         '''
-        f=np.radians(f)
-        l=np.radians(l)
-        R = np.array([[-np.sin(f)*np.cos(l), -np.sin(l), np.cos(f)*np.cos(l)],
-                      [-np.sin(f)*np.sin(l),  np.cos(l), np.cos(f)*np.sin(l)],
-                      [np.cos(f),             0,         np.sin(f)          ]])
+        fi=np.radians(fi)
+        lam=np.radians(lam)
+        R = np.array([[-np.sin(fi)*np.cos(lam), -np.sin(lam), np.cos(fi)*np.cos(lam)],
+                      [-np.sin(fi)*np.sin(lam),  np.cos(lam), np.cos(fi)*np.sin(lam)],
+                      [np.cos(fi),             0,         np.sin(fi)          ]])
         return(R)
     
     
-    def xyz2neu(self, f, l, xa, ya, za, xb, yb, zb):
+    def xyz2neu(self, fi, lam, xa, ya, za, xb, yb, zb):
         '''
         Układ współrzędnych horyzontalnych opisuje położenie obiektów astronomicznych względem
         lokalnego horyzontu. Zenit i nadir, są ważnymi punktami w tym układzie. Współrzędne horyzontalne
@@ -348,9 +348,9 @@ class Transformacje:
 
         Parametry
         ----------
-        f : FLOAT
+        fi : FLOAT
             [st. dz.] - szerokość 
-        l : FLOAT
+        lam : FLOAT
             [st. dz.] - długośc
         XA, YA, ZA, XB, YB, ZB: FLOAT
              współrzędne orto-kartezjańskie
@@ -363,7 +363,7 @@ class Transformacje:
 
         '''
         dX = Transformacje.dXYZ(self, xa, ya, za, xb, yb, zb)
-        R = Transformacje.rneu(self, f,l)
+        R = Transformacje.rneu(self, fi,lam)
         neu = R.T @ dX
         n = neu[0];   e = neu[1];   u = neu[2]
         n = "%.16f"%n; e = "%.16f"%e; u="%.16f"%u
@@ -387,4 +387,3 @@ class Transformacje:
             
         return(n, e, u)
     
-    eoeoeoeoeoeoeo
