@@ -15,10 +15,14 @@ Program pozwala na wczytanie współrzędnych z pliku tekstowego za pomocą wier
 
 Istnieje możliwość wprowadzenia współrzędnych ręcznie poprzez argument --input cmd. Aby uzyskać przeliczone współrzędne dla wybranego układu, należy otworzyć wiersz poleceń (cmd) i nawigować do folderu zawierającego plik programu (na przykład: C:\Users\Pulpit\infa\projekt_1). Następnie należy wpisać "python", nazwę pliku programu oraz jedną z wskazanych elipsoid: GRS80, WGS84, Krasowski. Po tej operacji można wprowadzać współrzędne XYZ (wartości współrzędnych wyrażone w metrach) w tej samej linii komend.
 
+
 *Przykład:* \
 python skrypt.py -m GRS80 -t input_file.txt -d dms -flh flh123.txt -x92y92 x92y92123.txt -x20y20 x20y20123.txt -neu neu123.txt
 
 Jeśli chcemy przetransformować współrzędne zawarte w pliku tekstowym, wówczas musimy podać elipsoidę (-m GRS80), jego nazwę (-t input_file.txt), jednostkę w pliku wynikowym (-d dms) oraz nazwę plików wyjściowych (-flh flh123.txt -x92y92 x92y92123.txt -x20y20 x20y20123.txt -neu neu123.txt). Ważne jest aby dane w pliku były rozdzielone przecinkiem, a także aby nie zawierał on spacji a współrzędne każdego punktu zaczynały się od nowego wiersza. Separatorem rozwinięcia dziesiętnego liczby powinna być kropka. Należy pamiętać, że plik powinien znajdować się w tym samym folderze roboczym co nasz program.
+
+Stworzono również dodatkowy plik kalkulatorxyz2flh.py, służy on do szybkiej zamiany współrzędnych kartezjańskich na współrzędne geodezyjne.
+
 *Przykład2:* \
 *python skrypt.py -m GRS80 -x 57392 -y 9387 -z 4567
 
