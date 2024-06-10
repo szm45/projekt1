@@ -5,29 +5,24 @@ Created on Mon Apr 22 17:13:57 2024
 
 import numpy as np
 from argparse import ArgumentParser
+import sys
 
 class Transformacje:
     
     
-    def __init__(self, model: str="WGS84"):
+    def __init__(self, elipsoida):
         """
-        Parametry elipsoidy definiujące jej kształt obejmują:
-            a- długość głównej półosi elipsoidy, czyli jej równikowy promień,
-            e2-kwadrat mimośrodu, obliczany jako ((kwadrat równikowego promienia + kwadrat biegunowego promienia) / kwadrat równikowego promienia).
+        Parametry elipsoid:
+            a - duża półoś elipsoidy - promień równikowy
+            b - mała półoś elipsoidy - promień południkowy
+            flat - spłaszczenie
+            ecc2 - mimośród^2
+        + WGS84: https://en.wikipedia.org/wiki/World_Geodetic_System#WGS84
+        + Inne powierzchnie odniesienia: https://en.wikibooks.org/wiki/PROJ.4#Spheroid
+        + Parametry planet: https://nssdc.gsfc.nasa.gov/planetary/factsheet/index.html
         """
-        
-        if model == "WGS84":
-            self.a = 6378137.000
-            self.e2 = 0.00669437999013
-        elif model == "GRS80":
-            self.a = 6378137.000
-            self.e2 = 0.00669438002290
-        elif model == "Krasowski":
-            self.a = 6378245.000
-            self.e2 = 0.00669342162296
-        else:
-            raise NotImplementedError(f"{model} niewłaściwa elipsoida")
-
+        self.a = elipsoida[0]
+        self.e2 = elipsoida[1]
     def dms(self, x):
         '''
         Funkcja dms służy nam do zamiany jednostek, z radianów na stopnie.  
@@ -593,41 +588,72 @@ class Transformacje:
         return(zm_liczba)
            
 if __name__ == "__main__":
-    geo = Transformacje("GRS80")
-    geo.wczytanie_oraz_zapisanie("wsp_inp.txt")
-    
-    parser = ArgumentParser()
-    parser.add_argument('-m', '--m', type=str, help="należy podać elipsoide (Krasowski, GRS80, WGS84")
-   
-    parser.add_argument('-x', '--x', type=float)
-    parser.add_argument('-y', '--y', type=float)
-    parser.add_argument('-z', '--z', type=float)
-    args = parser.parse_args()
-    
-    
-    geo = Transformacje(model = args.m)
-    
-    
-    f, l, h = geo.algorytm_hirvonena(args.x, args.y, args.z)
-    fi, lam, ha = geo.algorytm_hirvonena(args.x, args.y, args.z, output="dms")
-    
-    print("")
-    print("")
-    print("Elipsoida:", args.m)
-    print(f"Wyniki_hirvonen'; fi = {fi}, lam = {lam}, ha = {ha:^.3f}[m]")
-    
-    fi, lam, ha = geo.algorytm_hirvonena(args.x, args.y, args.z)
-    if lam >= 13.5 and lam <= 25.5 and fi <= 55.0 and fi >= 48.9:
-        x92, y92 = geo.flh2PL1992(fi,lam)
-        x00, y00 = geo.flh2PL2000(fi,lam)
-        print(f"Wyniki_z_transformacji_1992_oraz_2000; X1992 = {x92:^.3f}[m], Y1992 = {y92:^.3f}[m], X2000 = {x00:^.3f}[m], Y2000 = {y00:^.3f}[m]")
-    else:
-        x92 = " '-' " 
-        y92 = " '-' " 
-        x00 = " '-' " 
-        y00 = " '-' " 
-        print(f"Wyniki_z_transformacji_1992_i_2000; X1992 = {x92}[m], Y1992 = {y92}[m], X2000 = {x00}[m], Y2000 = {y00}[m]")
-        print("niewłaściwe położenie")
-    
-    print("")
-    print("")
+    elipsoidy = {
+        'WGS84': [6378137.000, 0.00669437999013],
+        'GRS80': [6378137.000, 0.00669438002290],
+        'Krasowski': [6378245.000, 0.00669342162296]
+    }
+
+    funkcje = {
+        'XYZ_BLH': 'xyz2flh',
+        'BLH_XYZ': 'flh2xyz',
+        'XYZ_NEU': 'xyz2neu',
+        'BL_PL2000': 'PL2000',
+        'BL_PL1992': 'PL1992'
+    }
+
+    argumenty = sys.argv[1:]
+
+    if not all(param in argumenty for param in ['-plik', '-elip', '-funkcja']):
+        raise Exception('Nie podano wszystkich argumentów: -plik, -elip, -funkcja. Podaj wszystkie argumenty.')
+
+    try:
+        elip = argumenty[argumenty.index('-elip') + 1]
+        trans_wsp = argumenty[argumenty.index('-funkcja') + 1]
+        plik = argumenty[argumenty.index('-plik') + 1]
+    except IndexError:
+        raise Exception('Nie podano wartości dla wszystkich wymaganych parametrów')
+
+    if elip not in elipsoidy:
+        raise Exception('Podano niewłaściwy typ modelu elipsoidy. Podaj jeden z dostępnych: GRS80, WGS84, Krasowski.')
+
+    elipsoida = elipsoidy[elip]
+    geo = Transformacje(elipsoida)
+
+    if trans_wsp not in funkcje:
+        raise Exception('Skrypt nie obsługuje podanej transformacji. Podaj jedną z możliwych: XYZ_BLH, BLH_XYZ, XYZ_NEU, BL_PL2000, BL_PL1992.')
+
+    try:
+        with open(plik, 'r') as f, open(f"WYNIK_{trans_wsp.upper()}.txt", 'w') as wynik:
+            linie = f.readlines()[4:]  # Pominięcie pierwszych czterech linii
+            for index, linia in enumerate(linie):
+                linia = linia.strip()
+                if trans_wsp in ['XYZ_BLH', 'BLH_XYZ', 'XYZ_NEU']:
+                    x_str, y_str, z_str = linia.split(',')
+                    x, y, z = float(x_str), float(y_str), float(z_str)
+                    if trans_wsp == 'XYZ_BLH':
+                        result = geo.algorytm_hirvonena(x, y, z)
+                    elif trans_wsp == 'BLH_XYZ':
+                        result = geo.odwrotny_hirvonen(x, y, z)
+                    elif trans_wsp == 'XYZ_NEU':
+                        if index == 0:
+                            X0, Y0, Z0 = x, y, z
+                            continue
+                        result = geo.xyz2neu(X0, Y0, Z0, x, y, z)
+                    wynik.write(' '.join(map(str, result)) + '\n')
+                else:
+                    fi_str, lam_str = linia.split(',')
+                    fi, lam = float(fi_str), float(lam_str)
+                    if trans_wsp == 'BL_PL2000':
+                        result = geo.flh2PL2000(fi, lam)
+                    elif trans_wsp == 'BL_PL1992':
+                        result = geo.flh2PL1992(fi, lam)
+                    wynik.write(' '.join(map(str, result)) + '\n')
+    except FileNotFoundError:
+        raise Exception('Podany plik nie istnieje. Podaj inny plik, sprawdź jego lokalizację lub sprawdź nazwę podanego pliku.')
+    except (KeyError, IndexError, ValueError):
+        raise Exception('Nieodpowiedni format pliku.')
+    except AttributeError:
+        print("Podana funkcja/elipsoida nie istnieje, proszę wprowadzić dostępne wartości.")
+
+    print('Zapisano. Wyniki znajdują się w pliku WYNIK_<funkcja>.txt')
